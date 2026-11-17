@@ -2,6 +2,10 @@ import type { CanvasClient } from "./client.js";
 import type {
   CanvasAnnouncement,
   CanvasAssignment,
+  CanvasAssignmentGroup,
+  CanvasCourseWeights,
+  CanvasEnrollment,
+  CanvasPlannerItem,
   CanvasCourse,
   CanvasCourseWithSyllabus,
   CanvasDiscussionTopic,
@@ -103,5 +107,36 @@ export async function getCourseWithSyllabus(
 ): Promise<CanvasCourseWithSyllabus> {
   return client.get<CanvasCourseWithSyllabus>(`/courses/${courseId}`, {
     include: ["syllabus_body", "term"],
+  });
+}
+
+export async function listStudentEnrollments(client: CanvasClient): Promise<CanvasEnrollment[]> {
+  return client.getPaginated<CanvasEnrollment>("/users/self/enrollments", {
+    type: ["StudentEnrollment"],
+    state: ["active"],
+  });
+}
+
+export async function getCourseWeights(client: CanvasClient, courseId: number): Promise<CanvasCourseWeights> {
+  return client.get<CanvasCourseWeights>(`/courses/${courseId}`);
+}
+
+export async function listAssignmentGroups(
+  client: CanvasClient,
+  courseId: number,
+): Promise<CanvasAssignmentGroup[]> {
+  return client.getPaginated<CanvasAssignmentGroup>(`/courses/${courseId}/assignment_groups`, {
+    include: ["assignments", "submission"],
+  });
+}
+
+export async function listPlannerItems(
+  client: CanvasClient,
+  startDate: string,
+  endDate: string,
+): Promise<CanvasPlannerItem[]> {
+  return client.getPaginated<CanvasPlannerItem>("/planner/items", {
+    start_date: startDate,
+    end_date: endDate,
   });
 }

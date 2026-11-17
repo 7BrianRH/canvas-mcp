@@ -85,7 +85,7 @@ export async function crawlCourse(client: CanvasClient, courseId: number): Promi
       course_id: courseId,
       type: "syllabus",
       title: `${course.name} — Syllabus`,
-      html_url: `https://uc.instructure.com/courses/${courseId}/assignments/syllabus`,
+      html_url: `https://raritanval.instructure.com/courses/${courseId}/assignments/syllabus`,
       text: htmlToMarkdown(course.syllabus_body),
       updated_at: new Date().toISOString(),
     });

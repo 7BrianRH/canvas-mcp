@@ -5,6 +5,7 @@ import { registerAssignmentTools } from "./tools/assignments.js";
 import { registerContentTools } from "./tools/content.js";
 import { registerCourseTools } from "./tools/courses.js";
 import { registerGatherContextTool } from "./tools/gather-context.js";
+import { registerGradeTools } from "./tools/grades.js";
 import { registerMissingWorkTool } from "./tools/missing-work.js";
 import { registerSearchTool } from "./tools/search.js";
 
@@ -18,6 +19,7 @@ export function createCanvasMcpServer(client: CanvasClient): McpServer {
   registerContentTools(server, ctx);
   registerSearchTool(server, ctx);
   registerGatherContextTool(server, ctx);
+  registerGradeTools(server, ctx);
 
   return server;
 }

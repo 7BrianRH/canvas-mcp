@@ -35,10 +35,22 @@ async function sleep(ms: number): Promise<void> {
 export class CanvasClient {
   private readonly baseUrl: string;
   private readonly token: string;
+  private readonly host: string;
 
   constructor(config: CanvasClientConfig) {
     this.baseUrl = config.baseUrl.replace(/\/+$/, "");
     this.token = config.token;
+    this.host = new URL(this.baseUrl).host;
+  }
+
+  /** True only for URLs on the configured Canvas host, so the token is never sent anywhere else. */
+  isCanvasUrl(url: string): boolean {
+    try {
+      const u = new URL(url);
+      return u.protocol === "https:" && u.host === this.host;
+    } catch {
+      return false;
+    }
   }
 
   private buildUrl(path: string, params?: Record<string, unknown>): string {
@@ -58,7 +70,11 @@ export class CanvasClient {
 
   /** Single GET request with 429 backoff. Retries up to 5 times. */
   private async getRaw(url: string, attempt = 0): Promise<Response> {
+    if (!this.isCanvasUrl(url)) {
+      throw new CanvasApiError("Refusing to send the Canvas token to a non-Canvas URL", 0, url);
+    }
     const res = await fetch(url, {
+      redirect: "manual",
       method: "GET",
       headers: {
         Authorization: `Bearer ${this.token}`,
@@ -101,12 +117,27 @@ export class CanvasClient {
    * `.url` field), attaching the same bearer token used for API calls.
    */
   async getBytes(url: string): Promise<{ ok: true; bytes: Uint8Array } | { ok: false; status: number }> {
-    const res = await fetch(url, {
+    if (!this.isCanvasUrl(url)) return { ok: false, status: 0 };
+    let res = await fetch(url, {
+      redirect: "manual",
       headers: {
         Authorization: `Bearer ${this.token}`,
         "User-Agent": "canvas-mcp/0.1 (personal read-only MCP server)",
       },
     });
+    // Canvas file downloads redirect to signed storage URLs. Follow those
+    // WITHOUT the token, so it never leaves the Canvas host.
+    for (let hops = 0; hops < 5 && res.status >= 300 && res.status < 400; hops++) {
+      const next = res.headers.get("Location");
+      if (!next) break;
+      const target = new URL(next, url).toString();
+      res = await fetch(target, {
+        redirect: "manual",
+        headers: this.isCanvasUrl(target)
+          ? { Authorization: `Bearer ${this.token}`, "User-Agent": "canvas-mcp/0.1 (personal read-only MCP server)" }
+          : { "User-Agent": "canvas-mcp/0.1 (personal read-only MCP server)" },
+      });
+    }
     if (!res.ok) return { ok: false, status: res.status };
     return { ok: true, bytes: new Uint8Array(await res.arrayBuffer()) };
   }
@@ -141,7 +172,7 @@ export function createCanvasClientFromEnv(env: {
   CANVAS_BASE_URL?: string;
   CANVAS_TOKEN?: string;
 }): CanvasClient {
-  const baseUrl = env.CANVAS_BASE_URL ?? "https://uc.instructure.com/api/v1";
+  const baseUrl = env.CANVAS_BASE_URL ?? "https://raritanval.instructure.com/api/v1";
   const token = env.CANVAS_TOKEN;
   if (!token) {
     throw new Error("CANVAS_TOKEN is not set. Copy .env.example to .dev.vars and fill it in.");

@@ -30,12 +30,25 @@ function unauthorized(): Response {
  * casing/spacing) or as a bare token with no scheme prefix, since different
  * MCP clients' custom-header UIs disagree on which shape they send.
  */
+function timingSafeEqual(a: string, b: string): boolean {
+  const enc = new TextEncoder();
+  const x = enc.encode(a);
+  const y = enc.encode(b);
+  let diff = x.length ^ y.length;
+  const len = Math.max(x.length, y.length);
+  for (let i = 0; i < len; i++) diff |= (x[i] ?? 0) ^ (y[i] ?? 0);
+  return diff === 0;
+}
+
 function isAuthorized(request: Request, env: Env): boolean {
+  const expected = env.ACCESS_PASSPHRASE ?? "";
+  // Refuse to run with a missing or weak passphrase.
+  if (expected.length < 20) return false;
   const header = request.headers.get("Authorization");
   if (!header) return false;
   const bearerMatch = header.match(/^Bearer\s+(.+)$/i);
   const token = (bearerMatch?.[1] ?? header).trim();
-  return token.length > 0 && token === env.ACCESS_PASSPHRASE;
+  return token.length > 0 && timingSafeEqual(token, expected);
 }
 
 export default {
@@ -54,21 +67,12 @@ export default {
     }
 
     if (!isAuthorized(request, env)) {
-      const header = request.headers.get("Authorization");
-      console.log(
-        "auth rejected:",
-        JSON.stringify({
-          hasHeader: header !== null,
-          headerLength: header?.length ?? 0,
-          headerPrefix: header?.slice(0, 10) ?? null,
-          expectedLength: env.ACCESS_PASSPHRASE?.length ?? 0,
-        }),
-      );
+      console.log("auth rejected");
       return unauthorized();
     }
 
     const client = new CanvasClient({
-      baseUrl: env.CANVAS_BASE_URL ?? "https://uc.instructure.com/api/v1",
+      baseUrl: env.CANVAS_BASE_URL ?? "https://raritanval.instructure.com/api/v1",
       token: env.CANVAS_TOKEN,
     });
     const server = createCanvasMcpServer(client);

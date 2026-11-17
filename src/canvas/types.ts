@@ -94,3 +94,57 @@ export interface CanvasDiscussionTopic {
 export interface CanvasCourseWithSyllabus extends CanvasCourse {
   syllabus_body?: string;
 }
+
+export interface CanvasGradedSubmission {
+  score: number | null;
+  graded_at: string | null;
+  submitted_at: string | null;
+  workflow_state: string;
+  excused?: boolean | null;
+  missing?: boolean;
+  late?: boolean;
+}
+
+export interface CanvasGroupAssignment {
+  id: number;
+  name: string;
+  points_possible: number | null;
+  due_at: string | null;
+  html_url: string;
+  omit_from_final_grade?: boolean;
+  submission?: CanvasGradedSubmission;
+}
+
+export interface CanvasAssignmentGroup {
+  id: number;
+  name: string;
+  group_weight: number | null;
+  rules?: { drop_lowest?: number; drop_highest?: number; never_drop?: number[] };
+  assignments?: CanvasGroupAssignment[];
+}
+
+export interface CanvasEnrollment {
+  course_id: number;
+  type: string;
+  grades?: {
+    current_score: number | null;
+    current_grade: string | null;
+    final_score: number | null;
+  };
+}
+
+export interface CanvasCourseWeights extends CanvasCourse {
+  apply_assignment_group_weights?: boolean;
+}
+
+export interface CanvasPlannerItem {
+  course_id?: number;
+  context_name?: string;
+  plannable_type: string;
+  plannable_date: string;
+  html_url: string;
+  plannable: { title: string; due_at?: string | null; points_possible?: number | null };
+  submissions?:
+    | false
+    | { submitted?: boolean; graded?: boolean; missing?: boolean; late?: boolean; excused?: boolean };
+}
