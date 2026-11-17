@@ -44,18 +44,19 @@ describe("estimateGrade", () => {
     { id: 2, name: "Homework", group_weight: 40, assignments: [
       { id: 4, name: "H1", points_possible: 10, due_at: null, html_url: "", submission: { score: 10, graded_at: "x", submitted_at: "x", workflow_state: "graded" } },
       { id: 5, name: "H2", points_possible: 10, due_at: null, html_url: "", submission: { score: 0, graded_at: "x", submitted_at: "x", workflow_state: "graded", excused: true } },
+      { id: 6, name: "H3", points_possible: 10, due_at: null, html_url: "", submission: { score: 0, graded_at: "x", submitted_at: null, workflow_state: "unsubmitted", missing: true } },
     ] },
   ];
 
   it("weights categories and skips ungraded/excused work", () => {
     const est = estimateGrade(groups as never, true);
-    // Tests 138/200 = 69%, Homework 10/10 = 100% -> 0.6*69 + 0.4*100 = 81.4
-    expect(est.percent).toBeCloseTo(81.4, 5);
+    // Tests 138/200 = 69%, Homework 10/20 = 50% (missing auto-zero counts) -> 0.6*69 + 0.4*50 = 61.4
+    expect(est.percent).toBeCloseTo(61.4, 5);
   });
 
   it("uses total points when not weighted", () => {
     const est = estimateGrade(groups as never, false);
-    // 148 / 210
-    expect(est.percent).toBeCloseTo((148 / 210) * 100, 5);
+    // 148 / 220
+    expect(est.percent).toBeCloseTo((148 / 220) * 100, 5);
   });
 });

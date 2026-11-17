@@ -17,7 +17,7 @@ export interface GradeEstimate {
 }
 
 /**
- * Estimates a course grade from graded work only, the same way Canvas shows
+ * Estimates a course grade from scored work only (including auto-zeros for missing work), the same way Canvas shows
  * "current" grades: ungraded and excused items are left out. Drop-lowest rules
  * are reported but NOT applied, so the estimate can run a little low in courses
  * that drop scores.
@@ -31,8 +31,9 @@ export function estimateGrade(groups: CanvasAssignmentGroup[], weighted: boolean
       const sub = a.submission;
       if (a.omit_from_final_grade) continue;
       if (!sub || sub.excused) continue;
+      // Count any posted score, including zeros Canvas auto-applies to missing
+      // work (those keep workflow_state "unsubmitted" but still count in Canvas's total).
       if (sub.score === null || sub.score === undefined) continue;
-      if (sub.workflow_state !== "graded") continue;
       earned += sub.score;
       possible += a.points_possible ?? 0;
       gradedCount += 1;
